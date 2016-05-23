@@ -94,7 +94,7 @@ s = Strategy(degree=1)
 
 
 goal = 1000
-repetitions = 10**5
+repetitions = 10**6
 
 
 # F(x) = a + bx
