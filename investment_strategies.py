@@ -3,7 +3,7 @@ import numpy as np
 
 invest = lambda k: k if randint(1,k) == 1 else 0
 
-def get_exptection(k,times=10000000):
+def get_exptection(k,times=100):
 	earn = 0
 	for i in range(times):
 		earn += invest(k)
@@ -15,10 +15,14 @@ def get_exptection(k,times=10000000):
 
 class Strategy(object):
 
-	def __init__(self, degree=1):
+	def __init__(self, degree=1, parameters = None):
 		self.degree = degree
 		self.weight = np.ones(degree+1, dtype=float)
-		self.weight[1:] = np.random.rand(degree)
+		if parameters is None:
+			self.weight = np.random.rand(degree+1)
+
+		elif len(parameters) == degree + 1:
+			self.weight = np.array(parameters)
 
 
 	def normalize(self,weighted_desnity):
@@ -64,15 +68,21 @@ class Strategy(object):
 		return total_steps / repetitions
 
 
-	def start_investment(self, goal=100):
+	def get_k_frequency(self, goal=100, repetitions=100):
+		k_frequency = [0] * goal
+		for i in range(repetitions):
+			history = self.start_investment(goal)["history"]
+			for record in history:
+				k = record["k"] - 1
+				k_frequency[k] += 1
+		return k_frequency 
+
+
+	def start_investment(self, goal=100, write_file_name = None):
 		history = []
 		steps = 0
 		money = 0
-		
 		vector_k = self.get_vector_k(goal-money)
-		#weighted_desnity = self.get_weighted_density(goal)
-
-		#print(weighted_desnity)
 
 
 		while(money < goal):
@@ -83,30 +93,73 @@ class Strategy(object):
 			money += reward
 			history.append({"money":money, "reward":reward, "k":k, "steps":steps})
 
+
+		if not write_file_name is None:
+			self.history_to_file(history, write_file_name)
+
 		return {"total_steps": steps, "history": history}
 
 
-			
+
+	def history_to_file(self, history, write_file_name):
+		w = open(write_file_name, "w")
+		w.write("steps, selected_k, reward, current_money\n")
+		for record in history:
+			w.write("{}, {}, {}, {}\n".format(record["steps"], record["k"], record["reward"], record["money"]))
+
+		w.close()
+		print("Output file {} has been writen.".format(write_file_name))
 
 
 
-s = Strategy(degree=1)
-
-
-goal = 1000
-repetitions = 10**6
-
-
-# F(x) = a + bx
 
 
 
-
+# Each strategy is represented by a polynomial probability density function
+# A strategy object is intialized by two arguments, "degree" and "parameters"
+# "degress" means the degree of polynomial
+# The following is an example probability density function F(x) = a + bx when a=b=1
+degree = 1
 a = 1
 b = 1
-s.weight[0] = a
-s.weight[1] = b
+parameters= [a,b]
+s = Strategy(degree, parameters)
 
+
+
+# We set goal as 10 for the following examples
+goal = 10
+
+#Simulate an investment:
+result = s.start_investment(goal)
+
+#Get the total steps form the investment result and historical records as well
+print(result["total_steps"])
+print(result["history"])
+
+#You can also write the historical records into a file. CSV format is provided
+write_file_name = "my_investment_record.csv"
+s.start_investment(goal, write_file_name)
+
+
+
+#Calculate the average steps for a given repetitions: 100
+print(s.get_average_steps(goal, 100))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
 print("\nRisky Strategy Average Steps:")
 
 
@@ -128,7 +181,7 @@ s.weight[1] = b
 print("\nSafe Strategy Average Steps:")
 
 print(s.get_average_steps(goal, repetitions))
-
+'''
 
 
 
